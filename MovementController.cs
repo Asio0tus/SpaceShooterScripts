@@ -17,20 +17,29 @@ public class MovementController : MonoBehaviour
 
     [SerializeField] private ControlMode m_ControlMode;
 
+    [SerializeField] private PointerClickHold m_MobileFirePrimary;
+    [SerializeField] private PointerClickHold m_MobileFireSecondary;
+
     private void Start()
     {
         if (Application.isMobilePlatform)
         {
             m_ControlMode = ControlMode.VirtualJoystick;
             m_VirtualJoystick.gameObject.SetActive(true);
+            m_MobileFirePrimary.gameObject.SetActive(true);
+            m_MobileFireSecondary.gameObject.SetActive(true);
         }
         else if(m_ControlMode == ControlMode.Keyboard)
         {
-            m_VirtualJoystick.gameObject.SetActive(false);          
+            m_VirtualJoystick.gameObject.SetActive(false);
+            m_MobileFirePrimary.gameObject.SetActive(false);
+            m_MobileFireSecondary.gameObject.SetActive(false);
         }
         else
         {
             m_VirtualJoystick.gameObject.SetActive(true);
+            m_MobileFirePrimary.gameObject.SetActive(true);
+            m_MobileFireSecondary.gameObject.SetActive(true);
         }
     }
 
@@ -47,13 +56,22 @@ public class MovementController : MonoBehaviour
 
     private void ControlVirtualJoystick()
     {
-        Vector3 dir = m_VirtualJoystick.Value;
+        var dir = m_VirtualJoystick.Value;
 
-        var dot = Vector2.Dot(dir, m_TargetShip.transform.up);
-        var dot2 = Vector2.Dot(dir, m_TargetShip.transform.right);
+        m_TargetShip.ThrustControl = dir.y;
+        m_TargetShip.TorqueControl = -dir.x;
 
-        m_TargetShip.ThrustControl = Mathf.Max(0, dot);
-        m_TargetShip.TorqueControl = -dot2;
+        if (m_MobileFirePrimary.IsHold)
+        {
+            m_TargetShip.Fire(TurretMode.Primary);
+        }
+
+        if (m_MobileFireSecondary.IsHold)
+        {
+            m_TargetShip.Fire(TurretMode.Secondary);
+        }
+
+        
     }
 
     private void ControlKeyboard()
@@ -72,6 +90,16 @@ public class MovementController : MonoBehaviour
 
         if (Input.GetKey(KeyCode.RightArrow))
             torque = -1.0f;
+
+        if (Input.GetKey(KeyCode.Space))
+        {
+            m_TargetShip.Fire(TurretMode.Primary);
+        }
+        
+        if (Input.GetKey(KeyCode.X))
+        {
+            m_TargetShip.Fire(TurretMode.Secondary);
+        }
 
         m_TargetShip.ThrustControl = thrust;
         m_TargetShip.TorqueControl = torque;

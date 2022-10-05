@@ -59,12 +59,24 @@ public class Spaceship : Destructible
         m_Rigid.mass = m_Mass;
 
         m_Rigid.inertia = 1;
+
+        InitOffensive();
     }
        
 
     private void FixedUpdate()
     {
         UpdateRigidBody();
+
+        UpdateEnergyRegen();
+
+        if(useSpeedBoost == true)
+        {
+            timerBoostSpeed -= Time.fixedDeltaTime;
+
+            if(timerBoostSpeed <= 0) OffSpeedBoost();
+
+        }
     }
 
     #endregion
@@ -82,4 +94,104 @@ public class Spaceship : Destructible
 
         m_Rigid.AddTorque(-m_Rigid.angularVelocity * (m_Mobility / m_MaxAngularVelocity) * Time.fixedDeltaTime, ForceMode2D.Force);
     }
+
+    [SerializeField] private Turret[] m_Turrets;
+
+    public void Fire(TurretMode mode)
+    {
+        for(int i = 0; i < m_Turrets.Length; i++)
+        {
+            if(m_Turrets[i].Mode == mode)
+            {
+                m_Turrets[i].Fire();
+            }
+        }
+    }
+
+    [SerializeField] private int m_MaxEnergy;
+    [SerializeField] private int m_MaxAmmo;
+    [SerializeField] private int m_EnergyRegenPerSecond;
+    private float m_PrimaryEnergy;
+    private int m_SecondaryAmmo;
+
+    public void AddEnergy(int energy)
+    {
+        m_PrimaryEnergy = Mathf.Clamp(m_PrimaryEnergy + energy, 0, m_MaxEnergy);
+    }
+
+    public void AddAmmo(int ammo)
+    {
+        m_SecondaryAmmo = Mathf.Clamp(m_SecondaryAmmo + ammo, 0, m_MaxAmmo);
+    }
+
+    private void InitOffensive()
+    {
+        m_PrimaryEnergy = m_MaxEnergy;
+        m_SecondaryAmmo = m_MaxAmmo;
+    }
+
+    private void UpdateEnergyRegen()
+    {
+        if(m_PrimaryEnergy < m_MaxEnergy) 
+            m_PrimaryEnergy += (float)m_EnergyRegenPerSecond * Time.fixedDeltaTime;
+    }
+
+    public bool DrawAmmo(int count)
+    {
+        if (count == 0)
+            return true;
+
+        if(m_SecondaryAmmo >= count)
+        {
+            m_SecondaryAmmo -= count;
+            return true;
+        }
+
+        return false;
+    }
+
+    public bool DrawEnergy(int energy)
+    {
+        if (energy == 0)
+            return true;
+
+        if (m_PrimaryEnergy >= energy)
+        {
+            m_PrimaryEnergy -= energy;
+            return true;
+        }
+
+        return false;
+    }
+
+    public void AssignWeapon(TurretProperties props)
+    {
+        for(int i = 0; i < m_Turrets.Length; i++)
+        {
+            m_Turrets[i].AssignLoadout(props);
+        }
+    }
+
+
+    private float startMaxLinearVelocity;
+    private bool useSpeedBoost = false;
+    private float timerBoostSpeed;
+
+    public void OnSpeedBoost(float value, float maxTimeUseBoost)
+    {
+        startMaxLinearVelocity = m_MaxLinearVelocity;
+        timerBoostSpeed = maxTimeUseBoost;
+        useSpeedBoost = true;
+
+        m_MaxLinearVelocity += value;
+    }
+
+    private void OffSpeedBoost()
+    {
+        m_MaxLinearVelocity = startMaxLinearVelocity;
+        timerBoostSpeed = 0;
+        useSpeedBoost = false;
+                
+    }
+
 }
